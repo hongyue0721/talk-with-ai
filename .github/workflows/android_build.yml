@@ -9,20 +9,29 @@ jobs:
         with: { distribution: 'zulu', java-version: '17' }
       - uses: subosito/flutter-action@v2
         with: { flutter-version: '3.19.0', channel: 'stable' }
-      
-      # === 关键修复：自动补全 Android 工程文件 ===
-      - name: Recreate Android Project
+
+      # === 终极修复：移花接木大法 ===
+      - name: Fix Android Project Structure
         run: |
-          rm -rf android
-          flutter create . --platforms android
-      
+          # 1. 备份核心代码
+          mkdir -p temp_backup
+          cp -r lib pubspec.yaml temp_backup/
+          cp -r assets temp_backup/ || true
+          
+          # 2. 清理旧环境（保留 .git）并创建全新骨架
+          find . -maxdepth 1 ! -name '.git' ! -name '.github' ! -name 'temp_backup' ! -name '.' -exec rm -rf {} +
+          flutter create . --platforms android --org com.example.glasschat
+          
+          # 3. 还原代码
+          cp -r temp_backup/lib/* lib/
+          cp temp_backup/pubspec.yaml .
+          if [ -d "temp_backup/assets" ]; then cp -r temp_backup/assets .; fi
+          rm -rf temp_backup
+
       - run: flutter pub get
-      
-      # 尝试生成图标
       - name: Generate Icons
         continue-on-error: true
         run: flutter pub run flutter_launcher_icons
-
       - run: flutter build apk --release --no-tree-shake-icons
       - uses: actions/upload-artifact@v4
         with: { name: app-release, path: build/app/outputs/flutter-apk/app-release.apk }
