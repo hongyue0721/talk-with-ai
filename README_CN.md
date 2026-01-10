@@ -44,6 +44,27 @@
 3.  **成功！**
     刷新 GitHub 页面，你应该就能看到你的代码啦！
 
+## 第三步：自动打包 APK (云端打包) 📦
+
+不需要在你电脑上安装任何环境，我已经为你配置了 GitHub Actions。
+
+1.  **提交配置**：
+    确保你已经把 `.github/workflows/android_build.yml` 文件推送到了 GitHub。
+    ```bash
+    git add .
+    git commit -m "Enable auto build"
+    git push
+    ```
+
+2.  **等待打包**：
+    -   打开 GitHub 仓库页面，点击上方的 **Actions** 标签。
+    -   你会看到一个正在运行的任务。等待它变成绿色（约 5-10 分钟）。
+
+3.  **下载**：
+    -   点进那个绿色的任务。
+    -   在页面最底部 **Artifacts** 区域，点击 **app-release** 下载。
+    -   解压后发送到手机安装即可！
+
 ## 关于 App 功能 ✨
 
 -   **AI 对话**：支持 OpenAI 和 Gemini 模型。
