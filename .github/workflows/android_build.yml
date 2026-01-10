@@ -6,28 +6,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: { distribution: 'zulu', java-version: '17' }
+        with: { distribution: 'temurin', java-version: '17' }
       - uses: subosito/flutter-action@v2
         with: { flutter-version: '3.19.0', channel: 'stable' }
 
-      # === 终极绝招：异地重建 ===
-      - name: Create Fresh Project & Inject Code
+      # === 绝对纯净重建 ===
+      - name: Rebuild Project from Scratch
         run: |
-          # 1. 在上级目录新建干净项目
-          flutter create ../fresh_app --platforms android --org com.example.glasschat
-          
-          # 2. 清理新项目并注入我们的代码
-          rm -rf ../fresh_app/lib/* ../fresh_app/pubspec.yaml
-          cp -r lib/* ../fresh_app/lib/
-          cp pubspec.yaml ../fresh_app/
-          if [ -d "assets" ]; then cp -r assets ../fresh_app/; fi
+          # 1. 彻底删除所有平台文件夹，只保留代码
+          rm -rf android ios web linux macos windows .idea .dart_tool build
+          # 2. 强制重新生成 Android 骨架
+          flutter create . --platforms android --org com.example.glasschat
 
-      - name: Build APK
-        working-directory: ../fresh_app  # 关键：在干净目录执行
-        run: |
-          flutter pub get
-          flutter pub run flutter_launcher_icons || true
-          flutter build apk --release --no-tree-shake-icons
+      - run: flutter pub get
+      
+      # 开启详细日志模式 (-v)，如果失败可以看到具体原因
+      - run: flutter build apk --release --no-tree-shake-icons -v
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with: { name: app-release, path: build/app/outputs/flutter-apk/app-release.apk }
 
       - uses: actions/upload-artifact@v4
         with:
