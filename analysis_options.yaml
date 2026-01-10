@@ -1,0 +1,11 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    avoid_print: false  # Allowed for debug in this simple app, but prefer Logger
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    sort_child_properties_last: true
+    style_guide_for_flutter_repo: false
+    prefer_final_locals: true
+    unnecessary_this: true
