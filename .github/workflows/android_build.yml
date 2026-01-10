@@ -1,35 +1,29 @@
 name: Build Android APK
-
-on:
-  workflow_dispatch:  # 允许手动点击按钮触发
-
+on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: 'zulu', java-version: '17' }
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.19.0', channel: 'stable' }
+      
+      # === 关键修复：自动补全 Android 工程文件 ===
+      - name: Recreate Android Project
+        run: |
+          rm -rf android
+          flutter create . --platforms android
+      
+      - run: flutter pub get
+      
+      # 尝试生成图标
+      - name: Generate Icons
+        continue-on-error: true
+        run: flutter pub run flutter_launcher_icons
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+      - run: flutter build apk --release --no-tree-shake-icons
+      - uses: actions/upload-artifact@v4
+        with: { name: app-release, path: build/app/outputs/flutter-apk/app-release.apk }
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.19.0'
-          channel: 'stable'
-
-      - name: Get Dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
