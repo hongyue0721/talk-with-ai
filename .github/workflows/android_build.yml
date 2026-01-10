@@ -10,14 +10,16 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: { flutter-version: '3.19.0', channel: 'stable' }
 
-      # === 关键修复：强制指定合法项目名 ===
       - name: Fix Project Name
         run: |
           rm -rf android ios web linux macos windows .idea .dart_tool build
-          # 加上 --project-name 参数，强制使用下划线命名
           flutter create . --project-name glass_ai_chat --platforms android --org com.example.glasschat
 
       - run: flutter pub get
+      
+      # === 关键修复：生成数据库代码 ===
+      - run: dart run build_runner build --delete-conflicting-outputs
+
       - run: flutter build apk --release --no-tree-shake-icons
       - uses: actions/upload-artifact@v4
         if: success()
