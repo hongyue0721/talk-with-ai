@@ -1,65 +1,35 @@
 name: Build Android APK
-
-on:
-  workflow_dispatch:
-
+on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.19.0'
-          channel: 'stable'
+      - uses: actions/setup-java@v4
+        with: { distribution: 'temurin', java-version: '17' }
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.19.0', channel: 'stable' }
 
       - name: Create Fresh Project & Inject Code
         run: |
-          # 1. 在上级目录新建一个名为 glass_ai_chat 的项目
-          # 关键点：--project-name 必须和 pubspec.yaml 里的 name: glass_ai_chat 一致
           flutter create ../fresh_app --project-name glass_ai_chat --platforms android --org com.example.glasschat
-
-          # 2. 清理新项目里的默认代码
-          rm -rf ../fresh_app/lib/*
-          rm ../fresh_app/pubspec.yaml
-
-          # 3. 注入我们的代码
+          rm -rf ../fresh_app/lib/* ../fresh_app/pubspec.yaml
           cp -r lib/* ../fresh_app/lib/
           cp pubspec.yaml ../fresh_app/
-          
-          # 如果有 assets 文件夹，也复制过去
           if [ -d "assets" ]; then cp -r assets ../fresh_app/; fi
-          
-          # 确保 analysis_options 也过去，防止 lint 报错
-          if [ -f "analysis_options.yaml" ]; then cp analysis_options.yaml ../fresh_app/; fi
 
-      - name: Build APK in Fresh Project
-        working-directory: ../fresh_app  # 切换到新项目目录
+      - name: Build APK
+        working-directory: ../fresh_app
         run: |
           flutter pub get
-          
-          # 1. 生成 Hive 适配器代码 (数据库需要)
           dart run build_runner build --delete-conflicting-outputs
-          
-          # 2. 生成图标 (ios 已在 pubspec.yaml 中关闭)
           flutter pub run flutter_launcher_icons || true
-          
-          # 3. 打包 APK
           flutter build apk --release --no-tree-shake-icons
 
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          # 注意路径：在 ../fresh_app 下
-          path: ../fresh_app/build/app/outputs/flutter-apk/app-release.apk
+      # === 修复：把 APK 搬回当前目录 ===
+      - name: Copy APK to Workspace
+        run: cp ../fresh_app/build/app/outputs/flutter-apk/app-release.apk app-release.apk
+
+      - uses: actions/upload-artifact@v4
+        with: { name: app-release, path: app-release.apk }
+
