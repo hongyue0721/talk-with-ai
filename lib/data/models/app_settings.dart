@@ -25,6 +25,12 @@ class AppSettings extends HiveObject {
   @HiveField(6)
   String? userAvatarPath;
 
+  @HiveField(7)
+  String systemPrompt;
+
+  @HiveField(8)
+  int historyCount;
+
   AppSettings({
     required this.apiKey,
     required this.baseUrl,
@@ -33,5 +39,7 @@ class AppSettings extends HiveObject {
     required this.fontSize,
     this.backgroundImagePath,
     this.userAvatarPath,
+    this.systemPrompt = "你是一个智能助手。",
+    this.historyCount = 10,
   });
 }

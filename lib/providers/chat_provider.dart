@@ -85,6 +85,32 @@ class ChatProvider extends ChangeNotifier {
 
     try {
       final settings = settingsProvider.settings;
+      
+      // Construct context for LLM
+      List<ChatMessage> messagesToSend = [];
+      
+      // 1. Add System Prompt
+      if (settings.systemPrompt.isNotEmpty) {
+        messagesToSend.add(ChatMessage(
+          role: Role.system,
+          content: settings.systemPrompt,
+          timestamp: DateTime.now(),
+        ));
+      }
+      
+      // 2. Add History (Recent N messages, excluding the latest one we just added)
+      if (_currentSession!.messages.length > 1) {
+        final historyMessages = _currentSession!.messages.sublist(0, _currentSession!.messages.length - 1);
+        final int start = (historyMessages.length - settings.historyCount).clamp(0, historyMessages.length);
+        final recentHistory = historyMessages.sublist(start);
+        messagesToSend.addAll(recentHistory);
+      }
+      
+      // 3. Add the latest user message
+      if (_currentSession!.messages.isNotEmpty) {
+        messagesToSend.add(_currentSession!.messages.last);
+      }
+
       // Simple heuristic to detect if the user wants to use Gemini format
       // Ideally this should be an explicit toggle in settings
       final isGemini = settings.model.toLowerCase().contains("gemini");
@@ -93,7 +119,7 @@ class ChatProvider extends ChangeNotifier {
         apiKey: settings.apiKey,
         baseUrl: settings.baseUrl,
         model: settings.model,
-        history: _currentSession!.messages,
+        history: messagesToSend,
         temperature: settings.temperature,
         isGemini: isGemini,
       );

@@ -76,4 +76,14 @@ class SettingsProvider extends ChangeNotifier {
     _settings.userAvatarPath = path;
     _save();
   }
+
+  void updateSystemPrompt(String val) {
+    _settings.systemPrompt = val;
+    _save();
+  }
+
+  void updateHistoryCount(int val) {
+    _settings.historyCount = val;
+    _save();
+  }
 }

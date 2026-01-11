@@ -51,10 +51,18 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 _buildGlassInput(
-                  context, 
-                  label: "模型名称 (e.g. gpt-4, gemini-pro)", 
+                  context,
+                  label: "模型名称 (e.g. gpt-4, gemini-pro)",
                   onChanged: (val) => context.read<SettingsProvider>().updateModel(val),
                   value: context.watch<SettingsProvider>().settings.model,
+                ),
+                const SizedBox(height: 10),
+                _buildGlassInput(
+                  context,
+                  label: "预设提示词 (System Prompt)",
+                  onChanged: (val) => context.read<SettingsProvider>().updateSystemPrompt(val),
+                  value: context.watch<SettingsProvider>().settings.systemPrompt,
+                  maxLines: 3,
                 ),
 
                 const SizedBox(height: 30),
@@ -81,6 +89,27 @@ class SettingsScreen extends StatelessWidget {
                         activeColor: Colors.blueAccent,
                         inactiveColor: Colors.white10,
                         onChanged: (val) => context.read<SettingsProvider>().updateTemperature(val),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("附带历史消息数", style: TextStyle(color: Colors.white)),
+                          Text(
+                            "${context.watch<SettingsProvider>().settings.historyCount} 条",
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                      Slider(
+                        value: context.watch<SettingsProvider>().settings.historyCount.toDouble(),
+                        min: 0.0,
+                        max: 50.0,
+                        divisions: 50,
+                        activeColor: Colors.blueAccent,
+                        inactiveColor: Colors.white10,
+                        onChanged: (val) => context.read<SettingsProvider>().updateHistoryCount(val.toInt()),
                       ),
                     ],
                   ),
@@ -198,12 +227,14 @@ class SettingsScreen extends StatelessWidget {
     required Function(String) onChanged,
     required String value,
     bool obscure = false,
+    int maxLines = 1,
   }) {
     return GlassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: TextFormField(
         initialValue: value,
         obscureText: obscure,
+        maxLines: maxLines,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           labelText: label,
