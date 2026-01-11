@@ -6,6 +6,60 @@ import '../models/chat_message.dart';
 class LLMService {
   final Dio _dio = Dio();
 
+  // Simple connection test
+  Future<String> testConnection({
+    required String apiKey,
+    required String baseUrl,
+    required String model,
+    required bool isGemini,
+  }) async {
+    try {
+      if (isGemini) {
+        // Gemini Test
+        final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+        final url = "$cleanBaseUrl/v1beta/models/$model:generateContent?key=$apiKey";
+        final response = await _dio.post(
+           url,
+           options: Options(headers: {"Content-Type": "application/json"}),
+           data: jsonEncode({"contents": [{"parts": [{"text": "hi"}]}]}),
+        );
+        if (response.statusCode == 200) return "连接成功";
+        return "连接失败: ${response.statusCode}";
+      } else {
+        // OpenAI Test
+        String url = baseUrl;
+        if (!url.endsWith('/v1') && !url.contains('/v1/')) {
+          final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+          url = "$cleanBaseUrl/v1/chat/completions";
+        } else if (!url.endsWith('/chat/completions')) {
+           final cleanBaseUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+           url = "$cleanBaseUrl/chat/completions";
+        }
+
+        final response = await _dio.post(
+          url,
+          options: Options(headers: {
+            "Authorization": "Bearer $apiKey",
+            "Content-Type": "application/json",
+          }),
+          data: jsonEncode({
+            "model": model,
+            "messages": [{"role": "user", "content": "hi"}],
+            "max_tokens": 5
+          }),
+        );
+        if (response.statusCode == 200) return "连接成功";
+        return "连接失败: ${response.statusCode}";
+      }
+    } catch (e) {
+      if (e is DioException) {
+        final msg = e.response?.data?['error']?['message'] ?? e.message;
+        return "连接错误: $msg";
+      }
+      return "错误: $e";
+    }
+  }
+
   // General streaming chat interface
   Stream<String> streamChat({
     required String apiKey,
@@ -34,9 +88,20 @@ class LLMService {
     List<ChatMessage> history,
     double temperature,
   ) async* {
-    // Ensure baseUrl doesn't end with slash if we append /v1...
-    final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-    final url = "$cleanBaseUrl/v1/chat/completions";
+    // Smart URL construction
+    String url = baseUrl;
+    // If user provided base host (e.g. api.openai.com), append /v1/chat/completions
+    // If user provided /v1 (e.g. proxy.com/v1), append /chat/completions
+    // If user provided full path, use as is.
+    
+    if (!url.endsWith('/chat/completions')) {
+       final cleanBaseUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+       if (!cleanBaseUrl.endsWith('/v1')) {
+          url = "$cleanBaseUrl/v1/chat/completions";
+       } else {
+          url = "$cleanBaseUrl/chat/completions";
+       }
+    }
     
     final messages = history.map((msg) => {
       "role": msg.role == Role.user ? "user" : (msg.role == Role.system ? "system" : "assistant"),
@@ -91,7 +156,25 @@ class LLMService {
       }
     } catch (e) {
       if (e is DioException) {
-         yield "API Error: ${e.response?.statusCode} - ${e.response?.statusMessage}";
+         String errorMsg = "${e.response?.statusCode} - ${e.response?.statusMessage}";
+         try {
+            // Try to parse detailed error message from JSON body
+            if (e.response?.data is Map) {
+                final data = e.response?.data;
+                if (data['error'] != null) {
+                    if (data['error'] is Map) {
+                        errorMsg = data['error']['message'] ?? errorMsg;
+                    } else if (data['error'] is String) {
+                        errorMsg = data['error'];
+                    }
+                }
+            } else if (e.response?.data is String) {
+               // sometimes error is just a string body
+               errorMsg = e.response!.data;
+            }
+         } catch (_) {}
+         
+         yield "API Error: $errorMsg";
       } else {
          yield "Network Error: $e";
       }

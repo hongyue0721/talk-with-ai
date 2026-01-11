@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../providers/settings_provider.dart';
+import '../../data/services/llm_service.dart';
 import '../../core/widgets/glass_container.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -35,9 +36,40 @@ class SettingsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 _buildSectionHeader("API 配置"),
+                
+                // Provider Selector
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      dropdownColor: const Color(0xFF1A1A2E),
+                      value: context.watch<SettingsProvider>().settings.provider,
+                      style: const TextStyle(color: Colors.white),
+                      isExpanded: true,
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+                      items: const [
+                        DropdownMenuItem(value: "openai", child: Text("OpenAI")),
+                        DropdownMenuItem(value: "deepseek", child: Text("DeepSeek")),
+                        DropdownMenuItem(value: "gemini", child: Text("Google Gemini")),
+                        DropdownMenuItem(value: "moonshot", child: Text("Moonshot (Kimi)")),
+                        DropdownMenuItem(value: "custom", child: Text("自定义 (Custom)")),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) context.read<SettingsProvider>().updateProvider(val);
+                      },
+                    ),
+                  ),
+                ),
+
                 _buildGlassInput(
-                  context, 
-                  label: "API Key", 
+                  context,
+                  label: "API Key",
                   obscure: true,
                   onChanged: (val) => context.read<SettingsProvider>().updateApiKey(val),
                   value: context.watch<SettingsProvider>().settings.apiKey,
@@ -64,8 +96,76 @@ class SettingsScreen extends StatelessWidget {
                   value: context.watch<SettingsProvider>().settings.systemPrompt,
                   maxLines: 3,
                 ),
+                
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.wifi_find, size: 16),
+                    label: const Text("测试连接"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      ),
+                    ),
+                    onPressed: () async {
+                       final settings = context.read<SettingsProvider>().settings;
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(
+                           content: Text("正在连接服务器..."),
+                           duration: Duration(seconds: 1),
+                           backgroundColor: Color(0xFF16213E),
+                         ),
+                       );
+                       
+                       final result = await LLMService().testConnection(
+                          apiKey: settings.apiKey,
+                          baseUrl: settings.baseUrl,
+                          model: settings.model,
+                          isGemini: settings.provider == 'gemini',
+                       );
+                       
+                       if (context.mounted) {
+                         showDialog(
+                           context: context,
+                           builder: (ctx) => AlertDialog(
+                             backgroundColor: const Color(0xFF16213E).withOpacity(0.95),
+                             shape: RoundedRectangleBorder(
+                               borderRadius: BorderRadius.circular(20),
+                               side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                             ),
+                             title: Row(
+                               children: [
+                                 Icon(
+                                   result.contains("成功") ? Icons.check_circle : Icons.error,
+                                   color: result.contains("成功") ? Colors.greenAccent : Colors.redAccent,
+                                 ),
+                                 const SizedBox(width: 10),
+                                 Text(
+                                   result.contains("成功") ? "连接成功" : "连接失败",
+                                   style: const TextStyle(color: Colors.white, fontSize: 18),
+                                 ),
+                               ],
+                             ),
+                             content: Text(result, style: const TextStyle(color: Colors.white70)),
+                             actions: [
+                               TextButton(
+                                 onPressed: () => Navigator.pop(ctx),
+                                 child: const Text("确定"),
+                               )
+                             ],
+                           ),
+                         );
+                       }
+                    },
+                  ),
+                ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
                 _buildSectionHeader("模型参数"),
                 GlassContainer(
                   padding: const EdgeInsets.all(16),

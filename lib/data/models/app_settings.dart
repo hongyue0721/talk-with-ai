@@ -31,6 +31,9 @@ class AppSettings extends HiveObject {
   @HiveField(8)
   int historyCount;
 
+  @HiveField(9)
+  String provider; // "openai", "gemini", "deepseek", "custom"
+
   AppSettings({
     required this.apiKey,
     required this.baseUrl,
@@ -41,5 +44,6 @@ class AppSettings extends HiveObject {
     this.userAvatarPath,
     this.systemPrompt = "你是一个智能助手。",
     this.historyCount = 10,
+    this.provider = "openai",
   });
 }

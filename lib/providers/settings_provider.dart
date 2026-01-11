@@ -86,4 +86,30 @@ class SettingsProvider extends ChangeNotifier {
     _settings.historyCount = val;
     _save();
   }
+
+  void updateProvider(String val) {
+    _settings.provider = val;
+    
+    // Auto-fill Base URL and Model based on provider
+    switch (val) {
+      case 'openai':
+        _settings.baseUrl = "https://api.openai.com";
+        _settings.model = "gpt-3.5-turbo";
+        break;
+      case 'deepseek':
+        _settings.baseUrl = "https://api.deepseek.com";
+        _settings.model = "deepseek-chat";
+        break;
+      case 'gemini':
+        _settings.baseUrl = "https://generativelanguage.googleapis.com";
+        _settings.model = "gemini-pro";
+        break;
+      case 'moonshot':
+        _settings.baseUrl = "https://api.moonshot.cn";
+        _settings.model = "moonshot-v1-8k";
+        break;
+      // 'custom' keeps current values
+    }
+    _save();
+  }
 }
