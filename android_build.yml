@@ -1,0 +1,61 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Create Fresh Project & Inject Code
+        run: |
+          # 1. 在上级目录新建一个名为 glass_ai_chat 的项目
+          flutter create ../fresh_app --project-name glass_ai_chat --platforms android --org com.example.glasschat
+
+          # === 关键修复：注入网络权限 ===
+          # 在 <application> 标签之前插入 <uses-permission android:name="android.permission.INTERNET"/>
+          sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/><application|g' ../fresh_app/android/app/src/main/AndroidManifest.xml
+
+          # 2. 清理新项目里的默认代码
+          rm -rf ../fresh_app/lib/*
+          rm ../fresh_app/pubspec.yaml
+
+          # 3. 注入我们的代码
+          cp -r lib/* ../fresh_app/lib/
+          cp pubspec.yaml ../fresh_app/
+          
+          if [ -d "assets" ]; then cp -r assets ../fresh_app/; fi
+          if [ -f "analysis_options.yaml" ]; then cp analysis_options.yaml ../fresh_app/; fi
+
+      - name: Build APK in Fresh Project
+        working-directory: ../fresh_app
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          flutter pub run flutter_launcher_icons || true
+          flutter build apk --release --no-tree-shake-icons
+
+      - name: Copy APK to Workspace
+        run: cp ../fresh_app/build/app/outputs/flutter-apk/app-release.apk app-release.apk
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app-release.apk
