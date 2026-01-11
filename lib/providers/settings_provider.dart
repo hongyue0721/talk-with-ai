@@ -62,8 +62,18 @@ class SettingsProvider extends ChangeNotifier {
     _save(); 
   }
 
-  void updateFontSize(double val) { 
-    _settings.fontSize = val; 
-    _save(); 
+  void updateFontSize(double val) {
+    _settings.fontSize = val;
+    _save();
+  }
+
+  void updateBackgroundImage(String? path) {
+    _settings.backgroundImagePath = path;
+    _save();
+  }
+
+  void updateUserAvatar(String? path) {
+    _settings.userAvatarPath = path;
+    _save();
   }
 }

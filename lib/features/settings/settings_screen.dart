@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/widgets/glass_container.dart';
 
@@ -105,6 +107,64 @@ class SettingsScreen extends StatelessWidget {
                            onChanged: (val) {
                              if(val != null) context.read<SettingsProvider>().updateFontSize(val);
                            },
+                         ),
+                       ),
+                       const Divider(color: Colors.white24),
+                       ListTile(
+                         title: const Text("聊天背景", style: TextStyle(color: Colors.white)),
+                         subtitle: Text(
+                           context.watch<SettingsProvider>().settings.backgroundImagePath != null
+                             ? "已设置: ...${context.watch<SettingsProvider>().settings.backgroundImagePath!.split(Platform.pathSeparator).last}"
+                             : "默认渐变",
+                           style: const TextStyle(color: Colors.white54, fontSize: 12),
+                         ),
+                         trailing: Row(
+                           mainAxisSize: MainAxisSize.min,
+                           children: [
+                             if (context.watch<SettingsProvider>().settings.backgroundImagePath != null)
+                               IconButton(
+                                 icon: const Icon(Icons.close, color: Colors.redAccent),
+                                 onPressed: () => context.read<SettingsProvider>().updateBackgroundImage(null),
+                               ),
+                             IconButton(
+                               icon: const Icon(Icons.image, color: Colors.blueAccent),
+                               onPressed: () async {
+                                 FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
+                                 if (result != null) {
+                                   context.read<SettingsProvider>().updateBackgroundImage(result.files.single.path);
+                                 }
+                               },
+                             ),
+                           ],
+                         ),
+                       ),
+                       const Divider(color: Colors.white24),
+                       ListTile(
+                         title: const Text("用户头像", style: TextStyle(color: Colors.white)),
+                         subtitle: Text(
+                           context.watch<SettingsProvider>().settings.userAvatarPath != null
+                             ? "已设置"
+                             : "默认图标",
+                           style: const TextStyle(color: Colors.white54, fontSize: 12),
+                         ),
+                         trailing: Row(
+                           mainAxisSize: MainAxisSize.min,
+                           children: [
+                             if (context.watch<SettingsProvider>().settings.userAvatarPath != null)
+                               IconButton(
+                                 icon: const Icon(Icons.close, color: Colors.redAccent),
+                                 onPressed: () => context.read<SettingsProvider>().updateUserAvatar(null),
+                               ),
+                             IconButton(
+                               icon: const Icon(Icons.account_circle, color: Colors.blueAccent),
+                               onPressed: () async {
+                                 FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
+                                 if (result != null) {
+                                   context.read<SettingsProvider>().updateUserAvatar(result.files.single.path);
+                                 }
+                               },
+                             ),
+                           ],
                          ),
                        ),
                      ],

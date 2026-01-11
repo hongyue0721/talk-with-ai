@@ -19,11 +19,19 @@ class AppSettings extends HiveObject {
   @HiveField(4)
   double fontSize;
 
+  @HiveField(5)
+  String? backgroundImagePath;
+
+  @HiveField(6)
+  String? userAvatarPath;
+
   AppSettings({
     required this.apiKey,
     required this.baseUrl,
     required this.model,
     required this.temperature,
     required this.fontSize,
+    this.backgroundImagePath,
+    this.userAvatarPath,
   });
 }

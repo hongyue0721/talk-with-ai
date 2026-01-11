@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../core/widgets/glass_container.dart';
 import '../sidebar/sessions_drawer.dart';
 import '../settings/settings_screen.dart';
@@ -44,15 +46,33 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Stack(
         children: [
-          // Global Background (Mesh Gradient)
-          Container(
-             decoration: const BoxDecoration(
-               gradient: LinearGradient(
-                 begin: Alignment.topCenter,
-                 end: Alignment.bottomCenter,
-                 colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
-               ),
-             ),
+          // Global Background
+          Consumer<SettingsProvider>(
+            builder: (context, settings, _) {
+              if (settings.settings.backgroundImagePath != null) {
+                return Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: FileImage(File(settings.settings.backgroundImagePath!)),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  // Add a slight dark overlay to ensure text readability
+                  child: Container(color: Colors.black.withOpacity(0.3)),
+                );
+              }
+              return Container(
+                 decoration: const BoxDecoration(
+                   gradient: LinearGradient(
+                     begin: Alignment.topCenter,
+                     end: Alignment.bottomCenter,
+                     colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+                   ),
+                 ),
+              );
+            }
           ),
           
           Column(
@@ -65,17 +85,23 @@ class _ChatScreenState extends State<ChatScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 100, 16, 20),
                       itemCount: session.messages.length + (chatProvider.isLoading ? 1 : 0),
                       itemBuilder: (context, index) {
+                        final userAvatarPath = Provider.of<SettingsProvider>(context, listen: false).settings.userAvatarPath;
+                        
                         if (index < session.messages.length) {
-                          return MessageBubble(message: session.messages[index]);
+                          return MessageBubble(
+                            message: session.messages[index],
+                            userAvatarPath: userAvatarPath,
+                          );
                         } else {
                           // Streaming partial message
                           return MessageBubble(
                             message: ChatMessage(
-                              role: Role.assistant, 
+                              role: Role.assistant,
                               content: chatProvider.streamingContent,
                               timestamp: DateTime.now()
                             ),
                             isStreaming: true,
+                            userAvatarPath: userAvatarPath,
                           );
                         }
                       },
