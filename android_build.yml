@@ -27,9 +27,13 @@ jobs:
           # 1. 在上级目录新建一个名为 glass_ai_chat 的项目
           flutter create ../fresh_app --project-name glass_ai_chat --platforms android --org com.example.glasschat
 
-          # === 关键修复：注入网络权限 ===
-          # 在 <application> 标签之前插入 <uses-permission android:name="android.permission.INTERNET"/>
+          # === 关键修复：注入网络权限 & 允许 HTTP 明文传输 ===
+          # 1. 插入 INTERNET 权限
           sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/><application|g' ../fresh_app/android/app/src/main/AndroidManifest.xml
+          
+          # 2. 允许 HTTP 请求 (android:usesCleartextTraffic="true")
+          # 这一步是解决 "Connection failed" 访问 http://ip... 报错的关键
+          sed -i 's|<application|<application android:usesCleartextTraffic="true"|g' ../fresh_app/android/app/src/main/AndroidManifest.xml
 
           # 2. 清理新项目里的默认代码
           rm -rf ../fresh_app/lib/*
